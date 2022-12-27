@@ -11,7 +11,7 @@ from utils import *
 
 parser = argparse.ArgumentParser(description='command line options')
 parser.add_argument('--model_to_load', action="store", dest="model_to_load", default='DQN_ep10', help="model name")
-parser.add_argument('--stock_name', action="store", dest="stock_name", default='^GSPC_2018', help="stock name")
+parser.add_argument('--stock_name', action="store", dest="stock_name", default='^GSPC_2014', help="stock name")
 parser.add_argument('--initial_balance', action="store", dest="initial_balance", default=50000, type=int, help='initial balance')
 inputs = parser.parse_args()
 
@@ -19,21 +19,24 @@ model_to_load = inputs.model_to_load
 model_name = model_to_load.split('_')[0]
 stock_name = inputs.stock_name
 initial_balance = inputs.initial_balance
-display = True
+display = False
 window_size = 10
 action_dict = {0: 'Hold', 1: 'Hold', 2: 'Sell'}
 
 # select evaluation model
 model = importlib.import_module(f'agents.{model_name}')
 
+
 def hold():
     logging.info('Hold')
+
 
 def buy(t):
     agent.balance -= stock_prices[t]
     agent.inventory.append(stock_prices[t])
     agent.buy_dates.append(t)
     logging.info('Buy:  ${:.2f}'.format(stock_prices[t]))
+
 
 def sell(t):
     agent.balance += stock_prices[t]
@@ -43,6 +46,7 @@ def sell(t):
     reward = profit
     agent.sell_dates.append(t)
     logging.info('Sell: ${:.2f} | Profit: ${:.2f}'.format(stock_prices[t], profit))
+
 
 # configure logging
 logging.basicConfig(filename=f'logs/{model_name}_evaluation_{stock_name}.log', filemode='w',
@@ -84,7 +88,10 @@ while portfolio_return == 0: # a hack to avoid stationary case
 
         done = True if t == trading_period else False
         if done:
-            portfolio_return = evaluate_portfolio_performance(agent, logging)
+            portfolio_return = agent.portfolio_values[-1] - agent.initial_portfolio_value
+            logging.info('Total Return:           ${:.2f}'.format(portfolio_return))
+            # portfolio_return = evaluate_portfolio_performance(agent, logging)
+    break
 
 if display:
     # plot_portfolio_transaction_history(stock_name, agent)
